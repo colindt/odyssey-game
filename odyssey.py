@@ -16,12 +16,19 @@ boat = u"""\
 
 
 class Container (object):
-    # state:
+    # windows:
     #     stdscr
     #     gamewin
     #     gameborder
     #     scoreboard
+
+    # state:
     #     score
+    #     ch
+    #     x
+    #     y
+    #     min_x
+    #     max_x
 
     # sprites:
     #     boat
@@ -33,9 +40,6 @@ class Exit (Exception):
 
 
 def main():
-    global state
-    state = Container()
-
     init()
 
     try:
@@ -49,7 +53,12 @@ def main():
 
 
 def init():
-    state.stdscr = curses.initscr()
+    global state, windows, sprites
+    state = Container()
+    windows = Container()
+    sprites = Container()
+
+    windows.stdscr = curses.initscr()
 
     curses.start_color()
     curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
@@ -58,44 +67,56 @@ def init():
     curses.noecho()
     curses.cbreak()
     curses.curs_set(0)
-    state.stdscr.keypad(1)
-    state.stdscr.nodelay(1)
+    windows.stdscr.keypad(1)
+    windows.stdscr.nodelay(1)
 
-    state.scoreboard = curses.newwin(2, 80, 0, 0)
-    state.scoreboard.border(0, 0, 0, " ", 0, 0, curses.ACS_VLINE, curses.ACS_VLINE)
+    windows.scoreboard = curses.newwin(2, 80, 0, 0)
+    windows.scoreboard.border(0, 0, 0, " ", 0, 0, curses.ACS_VLINE, curses.ACS_VLINE)
 
-    state.gameborder = curses.newwin(22, 80, 2, 0)
-    state.gameborder.border(0, 0, 0, 0, curses.ACS_LTEE, curses.ACS_RTEE)
-    state.gameborder.refresh()
+    windows.gameborder = curses.newwin(22, 80, 2, 0)
+    windows.gameborder.border(0, 0, 0, 0, curses.ACS_LTEE, curses.ACS_RTEE)
+    windows.gameborder.refresh()
 
-    state.gamewin = curses.newwin(20, 78, 3, 1)
-    state.gamewin.keypad(1)
-    state.gamewin.nodelay(1)
-    state.gamewin.bkgd("~", curses.color_pair(1))
+    windows.gamewin = curses.newwin(20, 78, 3, 1)
+    windows.gamewin.keypad(1)
+    windows.gamewin.nodelay(1)
+    windows.gamewin.bkgd("~", curses.color_pair(1))
 
     state.score = 0
+    state.x = 35
+    state.y = 16
+    state.min_x = 0
+    state.max_x = 73
 
     load_sprites()
 
 
 def cleanup():
     curses.nocbreak()
-    state.stdscr.keypad(0)
+    windows.stdscr.keypad(0)
     curses.echo()
     curses.endwin()
     print "done"
 
 
 def load_sprites():
-    global sprites
-    sprites = Container()
     sprites.boat = boat.split("\n")
 
 
 def step():
-    state.ch = state.gamewin.getch()
+    state.ch = windows.gamewin.getch()
     if state.ch == ord('q'):
         raise Exit()
+
+    elif state.ch == curses.KEY_LEFT:
+        state.x -= 1
+        if state.x < state.min_x:
+            state.x = state.min_x
+
+    elif state.ch == curses.KEY_RIGHT:
+        state.x += 1
+        if state.x > state.max_x:
+            state.x = state.max_x
 
     state.score += 1
     draw()
@@ -103,33 +124,35 @@ def step():
 
 def draw():
     draw_score()
-    #state.gameborder.border(0, 0, 0, 0, curses.ACS_LTEE, curses.ACS_RTEE)
-    #state.gameborder.refresh()
     draw_game()
 
 
 
 
 def draw_score():
-    state.scoreboard.addstr(1, 3, "Score:", curses.A_BOLD)
-    state.scoreboard.addstr(1, 10, str(state.score))
-    state.scoreboard.refresh()
+    windows.scoreboard.addstr(1, 3, "Score:", curses.A_BOLD)
+    windows.scoreboard.addstr(1, 10, str(state.score))
+    windows.scoreboard.refresh()
 
 
 def draw_game():
-    state.gamewin.addstr(1, 1, ".....".encode("utf-8"), curses.color_pair(2))
-    state.gamewin.addstr(1, 1, unicode(state.ch).encode("utf-8"), curses.color_pair(2))
-    draw_sprite(state.gamewin, 10, 10, sprites.boat, curses.color_pair(2))
-    state.gamewin.refresh()
+    windows.gamewin.clear()
+    windows.gamewin.addstr(1, 1, ".....".encode("utf-8"), curses.color_pair(2))
+    windows.gamewin.addstr(1, 1, unicode(state.ch).encode("utf-8"), curses.color_pair(2))
+    draw_sprite(windows.gamewin, state.y, state.x, sprites.boat, curses.color_pair(2))
+    windows.gamewin.refresh()
 
 def draw_sprite(win, y, x, sprite, attrs=0):
-    max_y, max_x = win.getmaxyx()
+    h, w = win.getmaxyx()
     for i,row in enumerate(sprite):
-        if y + i < max_y and y + i >= 0:
+        if y + i < h and y + i >= 0:
             for j,char in enumerate(row):
-                if char != " " and x + j < max_x and x + j >= 0:
+                if char != " " and char != "\n" and x + j < w and x + j >= 0:
                     char = char.encode("utf-8")
-                    win.addstr(y + i, x + j, char, attrs)
+                    if y + i == h - 1 and x + j == w - 1:
+                        win.insstr(y + i, x + j, char, attrs)
+                    else:
+                        win.addstr(y + i, x + j, char, attrs)
 
 
 if __name__ == "__main__":
