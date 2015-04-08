@@ -19,35 +19,89 @@ x┏━┓
 #┌─┐
 #│ │
 #└─┘
+#⚘⌂
 
 islands = [
 u"""\
 xxxx┌───┐
-x┌──┘   └┐
-┌┘       │
-│       ┌┘
+x┌──┘  ⚘└┐
+┌┘ ⚘  ⌂  │
+│   ⚘   ┌┘
 └┐     ┌┘
-x│    ┌┘
+x│ ⌂ ⚘┌┘
 x└────┘\
 """.replace(" ", u"\xA0").replace("x", " "),
 
 u"""\
 xx┌─────┐
-x┌┘     └┐
+x┌┘ ⌂ ⌂ └┐
 ┌┘       │
-│       ┌┘
+│   ⌂   ┌┘
 └┐      │
-x└┐   ┌─┘
+x└┐  ⌂┌─┘
 xx└───┘\
 """.replace(" ", u"\xA0").replace("x", " "),
 
 u"""\
 xx┌────────┐
-┌─┘        │
-│         ┌┘
-│         │
-└┐        └┐
+┌─┘     ⌂  │
+│   ⌂  ⚘  ┌┘
+│    ⚘  ⚘ │
+└┐  ⚘  ⌂  └┐
 x└─────────┘\
+""".replace(" ", u"\xA0").replace("x", " "),
+
+u"""\
+┌─┐
+└─┘\
+""".replace(" ", u"\xA0").replace("x", " "),
+
+u"""\
+┌──┐
+│⌂┌┘
+└─┘\
+""".replace(" ", u"\xA0").replace("x", " "),
+
+u"""\
+x┌─┐
+┌┘ │
+└──┘\
+""".replace(" ", u"\xA0").replace("x", " "),
+
+u"""\
+┌─┐
+│ └┐
+└──┘\
+""".replace(" ", u"\xA0").replace("x", " "),
+
+u"""\
+┌──┐
+└┐⚘│
+x└─┘\
+""".replace(" ", u"\xA0").replace("x", " "),
+
+u"""\
+xxxxx┌────┐
+xxxxx│   ⚘└┐
+xxx┌─┘ ⚘⌂  │
+┌──┘⚘      └┐
+│     ⌂   ⚘┌┘
+│ ⌂ ┌──┐  ┌┘
+└┐ ┌┘xx│⌂┌┘
+x└─┘xxx└─┘\
+""".replace(" ", u"\xA0").replace("x", " "),
+
+u"""\
+┌──────────┐
+└┐⌂    ⚘   └──┐
+x└──┐        ⌂└┐
+xxx┌┘  ⌂      ⚘│
+xx┌┘  ┌──┐     └┐
+xx│ ⚘ │xx│  ⚘   │
+xx│   └──┘⌂    ⌂│
+xx└┐  ⌂      ┌──┘
+xxx└───┐   ┌─┘
+xxxxxxx└───┘\
 """.replace(" ", u"\xA0").replace("x", " "),
 ]
 
@@ -194,13 +248,13 @@ def step():
         elif state.ch == ord('h'):
             state.health -= 1
 
-        if state.stepnum % 4 == 0:
+        if state.stepnum % 3 == 0:
             for i in state.islands:
                 i.y += 1
             while state.islands and state.islands[0].y > windows.gamewin.getmaxyx()[0]:
                 state.islands = state.islands[1:]
 
-        if state.stepnum - state.last_island_spawn_step > 28 and random.randrange(20) == 0:
+        if state.stepnum - state.last_island_spawn_step > 10 and random.randrange(15) == 0:
             i = Container()
             i.y = -10
             i.x = random.randrange(67)
