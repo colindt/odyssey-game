@@ -368,7 +368,7 @@ def draw_sprite(win, y, x, sprite, attrs=0, collision=False):
                             state.health -= 1
                             new_tridents = []
                             for t in state.tridents:
-                                if t.y != y + i and t.x != x + j:
+                                if t.y != y + i or t.x != x + j:
                                     new_tridents.append(t)
                             state.tridents = new_tridents
 
