@@ -67,6 +67,8 @@ class Container (object):
     #     min_x
     #     max_x
     #     health
+    #     islands[]
+    #     last_island_spawn_step
 
     # sprites:
     #     boat
@@ -108,10 +110,6 @@ def init():
     curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
     curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLACK)
     curses.init_pair(4, curses.COLOR_GREEN, curses.COLOR_BLACK)
-    #curses.init_pair(1, curses.COLOR_RED, curses.COLOR_RED)
-    #curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_YELLOW)
-    #curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_YELLOW)
-    #curses.init_pair(4, curses.COLOR_GREEN, curses.COLOR_GREEN)
 
     curses.noecho()
     curses.cbreak()
@@ -188,7 +186,7 @@ def step():
         while state.islands and state.islands[0].y > windows.gamewin.getmaxyx()[0]:
             state.islands = state.islands[1:]
 
-    if state.stepnum - state.last_island_spawn_step > 26 and random.randrange(20) == 0:
+    if state.stepnum - state.last_island_spawn_step > 28 and random.randrange(20) == 0:
         i = Container()
         i.y = -10
         i.x = random.randrange(67)
