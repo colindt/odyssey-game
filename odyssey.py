@@ -174,7 +174,6 @@ def init():
     windows.stdscr.nodelay(1)
 
     windows.scoreboard = curses.newwin(2, 80, 0, 0)
-    windows.scoreboard.border(0, 0, 0, " ", 0, 0, curses.ACS_VLINE, curses.ACS_VLINE)
 
     windows.gameborder = curses.newwin(22, 80, 2, 0)
     windows.gameborder.border(0, 0, 0, 0, curses.ACS_LTEE, curses.ACS_RTEE)
@@ -190,6 +189,9 @@ def init():
 
 
 def reset():
+    windows.scoreboard.clear()
+    windows.scoreboard.border(0, 0, 0, " ", 0, 0, curses.ACS_VLINE, curses.ACS_VLINE)
+
     state.stepnum = 0
 
     state.score = 0
