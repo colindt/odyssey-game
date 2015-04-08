@@ -69,6 +69,7 @@ class Container (object):
     #     health
     #     islands[]
     #     last_island_spawn_step
+    #     crashed
 
     # sprites:
     #     boat
@@ -110,6 +111,7 @@ def init():
     curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
     curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLACK)
     curses.init_pair(4, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
     curses.noecho()
     curses.cbreak()
@@ -128,7 +130,12 @@ def init():
     windows.gamewin.keypad(1)
     windows.gamewin.nodelay(1)
     windows.gamewin.bkgd("~", curses.color_pair(1))
+    load_sprites()
 
+    reset()
+
+
+def reset():
     state.stepnum = 0
 
     state.score = 0
@@ -138,10 +145,10 @@ def init():
     state.max_x = 73
     state.health = 25
 
-    load_sprites()
-
     state.islands = []
     state.last_island_spawn_step = -100
+
+    state.crashed = False
 
 
 def cleanup():
@@ -162,40 +169,47 @@ def load_sprites():
     for i in islands:
         sprites.islands.append(i.split("\n"))
 
+
 def step():
     state.ch = windows.gamewin.getch()
+
     if state.ch == ord('q'):
         raise Exit()
 
-    elif state.ch == curses.KEY_LEFT:
-        state.x -= 1
-        if state.x < state.min_x:
-            state.x = state.min_x
+    if state.crashed:
+        if state.ch != -1 and state.ch != curses.KEY_LEFT and state.ch != curses.KEY_RIGHT:
+            reset()
+        return
+    else:
+        if state.ch == curses.KEY_LEFT:
+            state.x -= 1
+            if state.x < state.min_x:
+                state.x = state.min_x
 
-    elif state.ch == curses.KEY_RIGHT:
-        state.x += 1
-        if state.x > state.max_x:
-            state.x = state.max_x
+        elif state.ch == curses.KEY_RIGHT:
+            state.x += 1
+            if state.x > state.max_x:
+                state.x = state.max_x
 
-    elif state.ch == ord('h'):
-        state.health -= 1
+        elif state.ch == ord('h'):
+            state.health -= 1
 
-    if state.stepnum % 4 == 0:
-        for i in state.islands:
-            i.y += 1
-        while state.islands and state.islands[0].y > windows.gamewin.getmaxyx()[0]:
-            state.islands = state.islands[1:]
+        if state.stepnum % 4 == 0:
+            for i in state.islands:
+                i.y += 1
+            while state.islands and state.islands[0].y > windows.gamewin.getmaxyx()[0]:
+                state.islands = state.islands[1:]
 
-    if state.stepnum - state.last_island_spawn_step > 28 and random.randrange(20) == 0:
-        i = Container()
-        i.y = -10
-        i.x = random.randrange(67)
-        i.sprite = random.choice(sprites.islands)
-        state.islands.append(i)
-        state.last_island_spawn_step = state.stepnum
+        if state.stepnum - state.last_island_spawn_step > 28 and random.randrange(20) == 0:
+            i = Container()
+            i.y = -10
+            i.x = random.randrange(67)
+            i.sprite = random.choice(sprites.islands)
+            state.islands.append(i)
+            state.last_island_spawn_step = state.stepnum
 
-    if state.stepnum % 15 == 0:
-        state.score += 1
+        if state.stepnum % 15 == 0:
+            state.score += 1
 
     draw()
 
@@ -225,6 +239,11 @@ def draw_game():
 
     draw_sprite(windows.gamewin, state.y, state.x, sprites.boat, curses.color_pair(2), True)
     draw_health()
+
+    if state.crashed:
+        windows.gamewin.addstr( 9, 25, "        YOU CRASHED!        ".replace(" ", u"\xA0").encode("utf-8"), curses.color_pair(5) | curses.A_BOLD)
+        windows.gamewin.addstr(10, 25, "  Press any key to restart  ".replace(" ", u"\xA0").encode("utf-8"), curses.color_pair(5))
+
     windows.gamewin.refresh()
 
 
@@ -250,7 +269,7 @@ def draw_sprite(win, y, x, sprite, attrs=0, collision=False):
                 if char != " " and x + j < w and x + j >= 0:
                     char = char.encode("utf-8")
                     if collision and win.instr(y + i, x + j, 1) != u"~".encode("utf-8"):
-                        init() # restart game
+                        state.crashed = True
                     if y + i == h - 1 and x + j == w - 1:
                         win.insstr(y + i, x + j, char, attrs)
                     else:
