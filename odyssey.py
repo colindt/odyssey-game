@@ -124,6 +124,7 @@ class Container (object):
     #     islands[]
     #     last_island_spawn_step
     #     crashed
+    #     tridents[]
 
     # sprites:
     #     boat
@@ -161,11 +162,12 @@ def init():
     windows.stdscr = curses.initscr()
 
     curses.start_color()
-    curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
-    curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-    curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLACK)
-    curses.init_pair(4, curses.COLOR_GREEN, curses.COLOR_BLACK)
-    curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_WHITE)
+    curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)    # water
+    curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK) # boat
+    curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLACK)  # health
+    curses.init_pair(4, curses.COLOR_GREEN, curses.COLOR_BLACK)  # islands
+    curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_WHITE)  # death messages
+    curses.init_pair(6, curses.COLOR_CYAN, curses.COLOR_BLACK)   # tridents
 
     curses.noecho()
     curses.cbreak()
@@ -204,6 +206,8 @@ def reset():
     state.islands = []
     state.last_island_spawn_step = -100
 
+    state.tridents = []
+
     state.crashed = False
 
 
@@ -220,6 +224,8 @@ def load_sprites():
     sprites.health = [[u"⠀"],[u"⠁"],[u"⠃"],[u"⠇"],[u"⡇"],[u"⡏"],[u"⡟"],[u"⡿"],[u"⣿"]]
     sprites.face = [[u"☻"]]
     sprites.nbsp = [[u"\xA0"]]
+    sprites.trident = [[u"♆"]]
+    sprites.skull = [[u"☠"]]
 
     sprites.islands = []
     for i in islands:
@@ -232,30 +238,20 @@ def step():
     if state.ch == ord('q'):
         raise Exit()
 
-    if state.crashed:
+    if state.crashed or state.health <= 0:
         if state.ch != -1 and state.ch != curses.KEY_LEFT and state.ch != curses.KEY_RIGHT:
             reset()
-        return
     else:
-        if state.ch == curses.KEY_LEFT:
-            state.x -= 1
-            if state.x < state.min_x:
-                state.x = state.min_x
+        handle_input()
 
-        elif state.ch == curses.KEY_RIGHT:
-            state.x += 1
-            if state.x > state.max_x:
-                state.x = state.max_x
-
-        elif state.ch == ord('h'):
-            state.health -= 1
-
+        # move islands
         if state.stepnum % 3 == 0:
             for i in state.islands:
                 i.y += 1
             while state.islands and state.islands[0].y > windows.gamewin.getmaxyx()[0]:
                 state.islands = state.islands[1:]
 
+        # spawn islands
         if state.stepnum - state.last_island_spawn_step > 10 and random.randrange(15) == 0:
             i = Container()
             i.y = -10
@@ -264,12 +260,42 @@ def step():
             state.islands.append(i)
             state.last_island_spawn_step = state.stepnum
 
+        # move tridents
+        if state.stepnum % 2 == 0:
+            for t in state.tridents:
+                t.y += 1
+            while state.tridents and state.tridents[0].y > windows.gamewin.getmaxyx()[0]:
+                state.tridents = state.tridents[1:]
+
+        # spawn tridents
+        if random.randrange(5) == 0:
+            t = Container()
+            t.y = -10
+            t.x = random.randrange(windows.gamewin.getmaxyx()[1])
+            state.tridents.append(t)
+
+        # handle score
         if state.stepnum % 15 == 0:
             state.score += 1
 
     draw()
 
     state.stepnum += 1
+
+
+def handle_input():
+    if state.ch == curses.KEY_LEFT:
+        state.x -= 1
+        if state.x < state.min_x:
+            state.x = state.min_x
+
+    elif state.ch == curses.KEY_RIGHT:
+        state.x += 1
+        if state.x > state.max_x:
+            state.x = state.max_x
+
+    elif state.ch == ord('h'):
+        state.health -= 1
 
 
 def draw():
@@ -280,8 +306,8 @@ def draw():
 def draw_score():
     windows.scoreboard.addstr(1, 3, "Score:", curses.A_BOLD)
     windows.scoreboard.addstr(1, 10, str(state.score))
-    windows.scoreboard.addstr(1, 20, "Health:", curses.A_BOLD)
-    windows.scoreboard.addstr(1, 28, str(state.health) + u"\xA0".encode("utf-8"))
+    windows.scoreboard.addstr(1, 20, "Crew Remaining:", curses.A_BOLD)
+    windows.scoreboard.addstr(1, 36, str(state.health) + u"\xA0".encode("utf-8"))
     windows.scoreboard.refresh()
 
 
@@ -293,18 +319,28 @@ def draw_game():
         draw_sprite(windows.gamewin, i.y, i.x, i.sprite, curses.color_pair(4))
     #windows.gamewin.addstr(1, 1, windows.gamewin.instr(state.y,state.x,5), curses.color_pair(2))
 
+    for t in state.tridents:
+        draw_sprite(windows.gamewin, t.y, t.x, sprites.trident, curses.color_pair(6))
+
     draw_sprite(windows.gamewin, state.y, state.x, sprites.boat, curses.color_pair(2), True)
     draw_health()
 
     if state.crashed:
+        windows.gamewin.addstr( 8, 25, "                            ".replace(" ", u"\xA0").encode("utf-8"), curses.color_pair(5))
         windows.gamewin.addstr( 9, 25, "        YOU CRASHED!        ".replace(" ", u"\xA0").encode("utf-8"), curses.color_pair(5) | curses.A_BOLD)
         windows.gamewin.addstr(10, 25, "  Press any key to restart  ".replace(" ", u"\xA0").encode("utf-8"), curses.color_pair(5))
+        windows.gamewin.addstr(11, 25, "                            ".replace(" ", u"\xA0").encode("utf-8"), curses.color_pair(5))
+    elif state.health <= 0:
+        windows.gamewin.addstr( 8, 25, "                            ".replace(" ", u"\xA0").encode("utf-8"), curses.color_pair(5))
+        windows.gamewin.addstr( 9, 25, "         YOU DIED!          ".replace(" ", u"\xA0").encode("utf-8"), curses.color_pair(5) | curses.A_BOLD)
+        windows.gamewin.addstr(10, 25, "  Press any key to restart  ".replace(" ", u"\xA0").encode("utf-8"), curses.color_pair(5))
+        windows.gamewin.addstr(11, 25, "                            ".replace(" ", u"\xA0").encode("utf-8"), curses.color_pair(5))
 
     windows.gamewin.refresh()
 
 
 def draw_health():
-    face = sprites.face if state.health > 0 else sprites.nbsp
+    face = sprites.face if state.health > 0 else sprites.skull
     draw_sprite(windows.gamewin, state.y+1, state.x+2, face, curses.color_pair(3))
 
     hp = state.health - 1
@@ -324,8 +360,22 @@ def draw_sprite(win, y, x, sprite, attrs=0, collision=False):
             for j,char in enumerate(row):
                 if char != " " and x + j < w and x + j >= 0:
                     char = char.encode("utf-8")
-                    if collision and win.instr(y + i, x + j, 1) != u"~".encode("utf-8"):
-                        state.crashed = True
+
+                    if collision:
+                        at = win.instr(y + i, x + j, 1)
+
+                        if win.inch(y + i, x + j) == 9798: # hit by trident. TODO: better collision detection
+                            state.health -= 1
+                            new_tridents = []
+                            for t in state.tridents:
+                                if t.y != y + i and t.x != x + j:
+                                    new_tridents.append(t)
+                            state.tridents = new_tridents
+
+                        elif at != u"~".encode("utf-8"):
+                            state.health = 0
+                            state.crashed = True
+
                     if y + i == h - 1 and x + j == w - 1:
                         win.insstr(y + i, x + j, char, attrs)
                     else:
