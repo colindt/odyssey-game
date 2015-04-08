@@ -7,6 +7,8 @@ A small text-based game based on *The Odyssey*. Made for CL CV 241.
 * Left and right arrows to move
 * Press q or ctrl-c to quit
 
+Video: https://www.youtube.com/watch?v=pWY6skDxvtg
+
 ![](https://raw.githubusercontent.com/colindt/odyssey-game/master/screenshots/7.png)
 
 ![](https://raw.githubusercontent.com/colindt/odyssey-game/master/screenshots/8.png)
