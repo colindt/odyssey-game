@@ -168,6 +168,7 @@ def init():
     curses.init_pair(4, curses.COLOR_GREEN, curses.COLOR_BLACK)  # islands
     curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_WHITE)  # death messages
     curses.init_pair(6, curses.COLOR_CYAN, curses.COLOR_BLACK)   # tridents
+    curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_BLACK)  # houses
 
     curses.noecho()
     curses.cbreak()
@@ -376,10 +377,15 @@ def draw_sprite(win, y, x, sprite, attrs=0, collision=False):
                             state.health = 0
                             state.crashed = True
 
-                    if y + i == h - 1 and x + j == w - 1:
-                        win.insstr(y + i, x + j, char, attrs)
+                    if char == u"⌂".encode("utf-8"):
+                        new_attrs = curses.color_pair(7)
                     else:
-                        win.addstr(y + i, x + j, char, attrs)
+                        new_attrs = attrs
+
+                    if y + i == h - 1 and x + j == w - 1:
+                        win.insstr(y + i, x + j, char, new_attrs)
+                    else:
+                        win.addstr(y + i, x + j, char, new_attrs)
 
 
 if __name__ == "__main__":
