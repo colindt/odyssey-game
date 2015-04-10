@@ -125,6 +125,8 @@ class Container (object):
     #     last_island_spawn_step
     #     crashed
     #     tridents[]
+    #     frame_time
+    #     step_time[]
 
     # sprites:
     #     boat
@@ -143,8 +145,15 @@ def main():
 
     try:
         while True:
+            t = time.time()
             step()
-            time.sleep(1.0/30)
+
+            state.frame_time = time.time() - t
+            time.sleep(1.0/30 - state.frame_time)
+
+            state.step_time.append(time.time() - t)
+            if len(state.step_time) > 30:
+                state.step_time = state.step_time[1:]
     except (KeyboardInterrupt, Exit) as e:
         pass
     finally:
@@ -169,6 +178,7 @@ def init():
     curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_WHITE)  # death messages
     curses.init_pair(6, curses.COLOR_CYAN, curses.COLOR_BLACK)   # tridents
     curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_BLACK)  # houses
+    curses.init_pair(8, 238 if curses.COLORS == 256 else curses.COLOR_WHITE, curses.COLOR_BLACK)  # fps
 
     curses.noecho()
     curses.cbreak()
@@ -187,6 +197,10 @@ def init():
     windows.gamewin.nodelay(1)
     windows.gamewin.bkgd("~", curses.color_pair(1))
     load_sprites()
+
+    state.frame_time = 0
+    state.step_time = [1]
+    state.debug = False
 
     reset()
 
@@ -238,6 +252,11 @@ def step():
 
     if state.ch == ord('q'):
         raise Exit()
+
+    if state.ch == ord('d'):
+        state.debug = not state.debug
+        windows.scoreboard.clear()
+        windows.scoreboard.border(0, 0, 0, " ", 0, 0, curses.ACS_VLINE, curses.ACS_VLINE)
 
     if state.crashed or state.health <= 0:
         if state.ch != -1 and state.ch != curses.KEY_LEFT and state.ch != curses.KEY_RIGHT:
@@ -309,6 +328,12 @@ def draw_score():
     windows.scoreboard.addstr(1, 10, str(state.score))
     windows.scoreboard.addstr(1, 20, "Crew Remaining:", curses.A_BOLD)
     windows.scoreboard.addstr(1, 36, str(state.health) + u"\xA0".encode("utf-8"))
+
+    if state.debug:
+        windows.scoreboard.addstr(1, 68, "FPS:", curses.A_BOLD | curses.color_pair(8))
+        fps = float(len(state.step_time)) / sum(state.step_time)
+        windows.scoreboard.addstr(1, 73, "%.2f" % fps + u"\xA0".encode("utf-8"), curses.color_pair(8))
+
     windows.scoreboard.refresh()
 
 
