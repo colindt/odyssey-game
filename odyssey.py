@@ -149,7 +149,7 @@ def main():
             step()
 
             state.frame_time = time.time() - t
-            time.sleep(1.0/30 - state.frame_time)
+            time.sleep(max(1.0/30 - state.frame_time, 0))
 
             state.step_time.append(time.time() - t)
             if len(state.step_time) > 30:
